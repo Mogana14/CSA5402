@@ -1,0 +1,52 @@
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import ftplib
+import os
+AES_KEY = get_random_bytes(16)  
+BLOCK_SIZE = 16 
+
+def pad(data):
+    """Pad data to be multiple of BLOCK_SIZE."""
+    padding = BLOCK_SIZE - len(data) % BLOCK_SIZE
+    return data + bytes([padding] * padding)
+
+def unpad(data):
+    """Remove padding from decrypted data."""
+    return data[:-data[-1]]
+
+def encrypt_file(input_file, output_file):
+    """Encrypt a file using AES."""
+    cipher = AES.new(AES_KEY, AES.MODE_CBC)
+    with open(input_file, "rb") as f:
+        plaintext = f.read()
+    ciphertext = cipher.encrypt(pad(plaintext))
+    with open(output_file, "wb") as f:
+        f.write(cipher.iv + ciphertext)  
+    print(f"✅ Encrypted: {output_file}")
+
+def decrypt_file(input_file, output_file):
+    """Decrypt a file using AES."""
+    with open(input_file, "rb") as f:
+        iv = f.read(16) 
+        ciphertext = f.read()
+    cipher = AES.new(AES_KEY, AES.MODE_CBC, iv)
+    with open(output_file, "wb") as f:
+        f.write(unpad(cipher.decrypt(ciphertext)))
+    print(f"🔓 Decrypted: {output_file}")
+
+def upload_ftp(file_path, ftp_host, ftp_user, ftp_pass):
+    """Upload a file over FTP."""
+    with ftplib.FTP(ftp_host, ftp_user, ftp_pass) as ftp, open(file_path, "rb") as f:
+        ftp.storbinary(f"STOR {os.path.basename(file_path)}", f)
+    print(f"📤 Uploaded: {file_path} to {ftp_host}")
+
+if __name__ == "__main__":
+    file_to_encrypt = "sample.txt"
+    encrypted_file = "sample_encrypted.bin"
+    decrypted_file = "sample_decrypted.txt"
+    encrypt_file(file_to_encrypt, encrypted_file)
+    ftp_host = "ftp.example.com"
+    ftp_user = "your_username"
+    ftp_pass = "your_password"
+    upload_ftp(encrypted_file, ftp_host, ftp_user, ftp_pass)
+    decrypt_file(encrypted_file, decrypted_file)
