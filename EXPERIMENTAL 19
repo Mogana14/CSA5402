@@ -1,0 +1,31 @@
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
+from Crypto.Random import get_random_bytes
+import binascii
+def generate_keys():
+    key = RSA.generate(2048) 
+    private_key = key.export_key()
+    public_key = key.publickey().export_key()
+    return private_key, public_key
+def create_signature(message, private_key):
+    h = SHA256.new(message.encode('utf-8'))
+    private_key_obj = RSA.import_key(private_key)
+    signature = pkcs1_15.new(private_key_obj).sign(h)
+    return signature
+def verify_signature(message, signature, public_key):
+    h = SHA256.new(message.encode('utf-8'))
+    public_key_obj = RSA.import_key(public_key)
+     try:
+        pkcs1_15.new(public_key_obj).verify(h, signature)
+        print("Signature is valid!")
+    except (ValueError, TypeError):
+        print("Signature verification failed!")
+if __name__ == "__main__":
+    private_key, public_key = generate_keys()
+    message = "This is a secret message!"
+    print(f"Original Message: {message}")
+    signature = create_signature(message, private_key)
+    print(f"Digital Signature: {binascii.hexlify(signature).decode()}")
+    print("\nVerifying the signature with the public key...")
+    verify_signature(message, signature, public_key)
