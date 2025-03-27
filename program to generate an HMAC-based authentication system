@@ -1,0 +1,25 @@
+import hmac
+import hashlib
+import secrets
+def generate_secret_key():
+    return secrets.token_hex(32)  # Generate a 32-byte hex key
+def create_hmac_signature(secret_key, message):
+    key_bytes = bytes.fromhex(secret_key)  # Convert hex key to bytes
+    message_bytes = message.encode('utf-8')
+    signature = hmac.new(key_bytes, message_bytes, hashlib.sha256).hexdigest()
+    return signature
+def verify_hmac_signature(secret_key, message, provided_signature):
+    expected_signature = create_hmac_signature(secret_key, message)
+    return hmac.compare_digest(expected_signature, provided_signature)
+if __name__ == "__main__":
+    secret_key = generate_secret_key()
+    print("Generated Secret Key:", secret_key)
+    
+    message = "This is a secure message."
+    signature = create_hmac_signature(secret_key, message)
+    print("Generated HMAC Signature:", signature
+    user_provided_signature = input("Enter the HMAC signature to verify: ")
+    if verify_hmac_signature(secret_key, message, user_provided_signature):
+        print("Authentication Successful: Signature is valid!")
+    else:
+        print("Authentication Failed: Signature is invalid!")
