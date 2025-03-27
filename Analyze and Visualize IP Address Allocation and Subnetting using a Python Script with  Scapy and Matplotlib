@@ -1,0 +1,56 @@
+import scapy.all as scapy
+import netifaces
+import matplotlib.pyplot as plt
+import ipaddress
+def get_local_network():
+    interfaces = netifaces.interfaces()
+    for interface in interfaces:
+        addrs = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in addrs:
+            ip_info = addrs[netifaces.AF_INET][0]
+            return ip_info["addr"], ip_info["netmask"]
+    return None, None
+def get_network_range(ip, subnet):
+    network = ipaddress.IPv4Network(f"{ip}/{subnet}", strict=False)
+    return str(network)
+def scan_network(network):
+    print(f"Scanning network: {network} ...")
+    arp_request = scapy.ARP(pdst=network)
+    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    packet = broadcast / arp_request
+    answered_list = scapy.srp(packet, timeout=2, verbose=False)[0]
+    
+    devices = {}
+    for answer in answered_list:
+        ip = answer[1].psrc
+        devices[ip] = devices.get(ip, 0) + 1 
+
+    return devices
+def visualize_ip_allocation(ip_counts):
+    if not ip_counts:
+        print("No active devices found to visualize.")
+        return
+    
+    labels = list(ip_counts.keys())
+    sizes = list(ip_counts.values())
+
+    plt.figure(figsize=(8, 6))
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
+    plt.title("IP Address Allocation in Network")
+    plt.show()
+def main():
+    ip, subnet = get_local_network()
+    if not ip or not subnet:
+        print("Unable to determine local IP and subnet.")
+        return
+
+    network = get_network_range(ip, subnet)
+    ip_counts = scan_network(network)
+
+    if ip_counts:
+        visualize_ip_allocation(ip_counts)
+    else:
+        print("No active devices found in the network.")
+
+if __name__ == "__main__":
+    main()
