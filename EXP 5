@@ -1,0 +1,36 @@
+import socket
+import nmap
+
+def scan_ports_socket(target, ports):
+    """Scan specified ports using the socket library."""
+    print(f"🔍 Scanning {target} using socket...\n")
+    open_ports = []
+
+    for port in ports:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            result = s.connect_ex((target, port))
+            if result == 0:
+                open_ports.append(port)
+                print(f"✅ Port {port} is OPEN")
+
+    return open_ports
+
+def scan_ports_nmap(target):
+    """Scan open ports using the nmap library."""
+    print(f"\n🔍 Scanning {target} using nmap...\n")
+    nm = nmap.PortScanner()
+    nm.scan(target, '1-1024')  
+    for host in nm.all_hosts():
+        print(f"📡 Host: {host} ({nm[host].hostname()})")
+        for proto in nm[host].all_protocols():
+            ports = nm[host][proto].keys()
+            for port in ports:
+                print(f"✅ Port {port} is OPEN ({proto.upper()})")
+
+if __name__ == "__main__":
+    target_ip = input("Enter target IP address: ")
+    
+    common_ports = [22, 80, 443, 3389, 21, 25, 53, 110] 
+    scan_ports_socket(target_ip, common_ports)
+    scan_ports_nmap(target_ip)
