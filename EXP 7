@@ -1,0 +1,28 @@
+import psutil
+import time
+import datetime
+
+LOG_FILE = "network_connections.log"
+
+def log_connections():
+    with open(LOG_FILE, "a") as log:
+        log.write(f"\n===== Network Connections Log - {datetime.datetime.now()} =====\n")
+        
+        for conn in psutil.net_connections(kind="inet"):
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            local_ip, local_port = conn.laddr if conn.laddr else ("N/A", "N/A")
+            remote_ip, remote_port = conn.raddr if conn.raddr else ("N/A", "N/A")
+            status = conn.status
+            process = psutil.Process(conn.pid).name() if conn.pid else "Unknown"
+
+            log_entry = f"[{timestamp}] {process} | {local_ip}:{local_port} -> {remote_ip}:{remote_port} | {status}\n"
+            log.write(log_entry)
+            print(log_entry.strip())
+if __name__ == "__main__":
+    print("📡 Monitoring network connections... (Press Ctrl+C to stop)")
+    try:
+        while True:
+            log_connections()
+            time.sleep(5) 
+    except KeyboardInterrupt:
+        print("\n🛑 Logging stopped.")
