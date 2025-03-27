@@ -1,0 +1,41 @@
+import java.security.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class FileIntegrityChecker {
+    
+    private static String calculateSHA256(String filePath) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] fileBytes = Files.readAllBytes(Paths.get(filePath));
+        byte[] hashBytes = digest.digest(fileBytes);
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
+    }
+    
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter the file path: ");
+        String filePath = scanner.nextLine();
+        
+        System.out.print("Enter the expected SHA-256 checksum: ");
+        String expectedChecksum = scanner.nextLine();
+        
+        try {
+            String calculatedChecksum = calculateSHA256(filePath);
+            System.out.println("Calculated SHA-256 Checksum: " + calculatedChecksum);
+            
+            if (calculatedChecksum.equalsIgnoreCase(expectedChecksum)) {
+                System.out.println("File integrity verified: Checksums match!");
+            } else {
+                System.out.println("File integrity compromised: Checksums do not match!");
+            }
+        } catch (Exception e) {
+            System.err.println("Error calculating checksum: " + e.getMessage());
+        }
+        scanner.close();
+    }
+}
