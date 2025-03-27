@@ -1,0 +1,38 @@
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.Scanner;
+
+public class SecureLogin {
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "password123";
+
+    public static void main(String[] args) {
+        // Enable security manager
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
+        }
+
+        System.out.println("Welcome to the Secure Login System");
+        boolean isAuthenticated = AccessController.doPrivileged((PrivilegedAction<Boolean>) () -> {
+            return authenticateUser();
+        });
+
+        if (isAuthenticated) {
+            System.out.println("Login successful! Access granted.");
+        } else {
+            System.out.println("Login failed! Access denied.");
+        }
+    }
+
+    private static boolean authenticateUser() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter username: ");
+        String inputUser = scanner.nextLine();
+
+        System.out.print("Enter password: ");
+        String inputPass = scanner.nextLine();
+        scanner.close();
+
+        return USERNAME.equals(inputUser) && PASSWORD.equals(inputPass);
+    }
+}
