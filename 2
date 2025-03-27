@@ -1,0 +1,92 @@
+import os
+import ctypes
+import wmi
+import subprocess
+HOSTS_FILE = r"C:\Windows\System32\drivers\etc\hosts"
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+def read_hosts_file():
+    print("\n📜 Reading the Hosts File...\n")
+    try:
+        with open(HOSTS_FILE, "r") as file:
+            for line in file:
+                print(line.strip())
+    except Exception as e:
+        print(f"❌ Error reading hosts file: {e}")
+def modify_hosts_file(ip, domain):
+    print(f"\n✍️ Modifying Hosts File: {domain} -> {ip}\n")
+    try:
+        with open(HOSTS_FILE, "a") as file:
+            file.write(f"\n{ip} {domain}")
+        print("✅ Hosts file updated successfully!")
+    except Exception as e:
+        print(f"❌ Error modifying hosts file: {e}")
+def get_dns_settings():
+    print("\n🌐 Current DNS Settings:\n")
+    c = wmi.WMI()
+    for adapter in c.Win32_NetworkAdapterConfiguration(IPEnabled=True):
+        print(f"Adapter: {adapter.Description}")
+        if adapter.DNSServerSearchOrder:
+            print(f"  DNS Servers: {', '.join(adapter.DNSServerSearchOrder)}")
+        else:
+            print("  No DNS Servers configured.")
+def list_network_interfaces():
+    print("\n🔍 Listing Network Interfaces:\n")
+    c = wmi.WMI()
+    for adapter in c.Win32_NetworkAdapterConfiguration(IPEnabled=True):
+        print(f"Adapter: {adapter.Description}")
+        print(f"  MAC Address: {adapter.MACAddress}")
+        print(f"  IP Address: {', '.join(adapter.IPAddress)}")
+        print(f"  Subnet Mask: {', '.join(adapter.IPSubnet)}")
+        print(f"  Gateway: {', '.join(adapter.DefaultIPGateway)}\n")
+def set_static_ip(interface, ip, subnet, gateway):
+    try:
+        command = f'netsh interface ip set address name="{interface}" static {ip} {subnet} {gateway}'
+        subprocess.run(command, shell=True, check=True)
+        print(f"✅ Successfully set static IP: {ip}, Subnet: {subnet}, Gateway: {gateway}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error setting static IP: {e}")
+def main():
+    if not is_admin():
+        print("❌ This script must be run as Administrator!")
+        return
+
+    while True:
+        print("\n📡 Windows Network Configuration Manager")
+        print("1️⃣ Read Hosts File")
+        print("2️⃣ Modify Hosts File")
+        print("3️⃣ Show DNS Settings")
+        print("4️⃣ List Network Interfaces")
+        print("5️⃣ Set Static IP")
+        print("6️⃣ Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            read_hosts_file()
+        elif choice == "2":
+            ip = input("Enter the IP address: ")
+            domain = input("Enter the domain name: ")
+            modify_hosts_file(ip, domain)
+        elif choice == "3":
+            get_dns_settings()
+        elif choice == "4":
+            list_network_interfaces()
+        elif choice == "5":
+            interface = input("Enter the network interface name: ")
+            ip = input("Enter the new static IP: ")
+            subnet = input("Enter the subnet mask: ")
+            gateway = input("Enter the gateway address: ")
+            set_static_ip(interface, ip, subnet, gateway)
+        elif choice == "6":
+            print("🚀 Exiting...")
+            break
+        else:
+            print("❌ Invalid choice, please try again.")
+
+if __name__ == "__main__":
+    main()
