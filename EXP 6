@@ -1,0 +1,39 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
+
+public class NetworkInfo {
+    public static void main(String[] args) {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface net = interfaces.nextElement();
+                if (net.isUp() && !net.isLoopback()) {
+                    System.out.println("\n🔹 Interface: " + net.getDisplayName());
+                    Enumeration<InetAddress> addresses = net.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress ip = addresses.nextElement();
+                        if (!ip.isLoopbackAddress() && ip.getAddress().length == 4) { // IPv4 only
+                            System.out.println("   ✅ IP: " + ip.getHostAddress());
+                        }
+                    }
+                }
+            }
+            String os = System.getProperty("os.name").toLowerCase();
+            Process process = os.contains("win") ? Runtime.getRuntime().exec("ipconfig") 
+                                                 : Runtime.getRuntime().exec("sh -c 'ip route | grep default'");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Default Gateway") || line.contains("default via")) {
+                    System.out.println("   🌍 Gateway: " + line.replaceAll("[^0-9.]", " ").trim().split(" ")[0]);
+                }
+            }
+            reader.close();
+        } catch (Exception e) {
+            System.err.println("❌ Error: " + e.getMessage());
+        }
+    }
+}
