@@ -1,0 +1,42 @@
+import psutil
+def get_active_tcp_connections():
+    print("\n🔍 Active TCP/IP Connections:\n")
+    print(f"{'PID':<8} {'Process Name':<25} {'Local Address':<25} {'Remote Address':<25} {'Status'}")
+    print("=" * 100)
+
+    for conn in psutil.net_connections(kind="tcp"):
+        try:
+            pid = conn.pid if conn.pid else "-"
+            process = psutil.Process(conn.pid).name() if conn.pid else "Unknown"
+            laddr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "N/A"
+            raddr = f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else "N/A"
+            status = conn.status
+
+            print(f"{pid:<8} {process:<25} {laddr:<25} {raddr:<25} {status}")
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+def get_listening_tcp_daemons():
+    print("\n🔍 TCP Daemons Listening on Ports:\n")
+    print(f"{'PID':<8} {'Process Name':<25} {'Local Address':<25} {'Status'}")
+    print("=" * 80)
+
+    for conn in psutil.net_connections(kind="tcp"):
+        if conn.status == "LISTEN":
+            try:
+                pid = conn.pid if conn.pid else "-"
+                process = psutil.Process(conn.pid).name() if conn.pid else "Unknown"
+                laddr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "N/A"
+                status = conn.status
+
+                print(f"{pid:<8} {process:<25} {laddr:<25} {status}")
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+def main():
+    print("\n📡 TCP/IP Daemon Analyzer\n")
+    get_active_tcp_connections()
+    get_listening_tcp_daemons()
+
+if __name__ == "__main__":
+    main()
