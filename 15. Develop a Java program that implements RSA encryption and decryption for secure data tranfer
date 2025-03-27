@@ -1,0 +1,30 @@
+import java.security.*;
+import javax.crypto.Cipher;
+import java.util.Base64;
+public class RSAEncryption {
+    private static KeyPair generateKeyPair() throws Exception {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(2048);
+        return keyGen.generateKeyPair();
+    }
+  private static String encrypt(String msg, PublicKey pubKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+        return Base64.getEncoder().encodeToString(cipher.doFinal(msg.getBytes()));
+    }
+
+    private static String decrypt(String msg, PrivateKey privKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, privKey);
+        return new String(cipher.doFinal(Base64.getDecoder().decode(msg)));
+    }
+
+    public static void main(String[] args) throws Exception {
+        KeyPair keyPair = generateKeyPair();
+        String msg = "Secure RSA Message";
+        String encrypted = encrypt(msg, keyPair.getPublic());
+        String decrypted = decrypt(encrypted, keyPair.getPrivate());
+        System.out.println("Encrypted: " + encrypted);
+        System.out.println("Decrypted: " + decrypted);
+    }
+}
