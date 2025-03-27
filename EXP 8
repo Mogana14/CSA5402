@@ -1,0 +1,33 @@
+import hashlib
+import time
+import os
+FILES_TO_MONITOR = ["/etc/network/interfaces", "/etc/resolv.conf"]
+CHECK_INTERVAL = 5  
+file_hashes = {}
+
+def calculate_hash(file_path):
+    """Calculate SHA-256 hash of a file."""
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+def check_for_changes():
+    """Monitor files for unauthorized modifications."""
+    global file_hashes
+    for file in FILES_TO_MONITOR:
+        current_hash = calculate_hash(file)
+        if file not in file_hashes:
+            file_hashes[file] = current_hash
+            print(f"🔍 Monitoring started for: {file}")
+        elif current_hash != file_hashes[file]:
+            print(f"⚠️ ALERT: Unauthorized change detected in {file}!")
+            file_hashes[file] = current_hash
+if __name__ == "__main__":
+    print("🔒 Network Configuration Monitor Running...")
+    try:
+        while True:
+            check_for_changes()
+            time.sleep(CHECK_INTERVAL)
+    except KeyboardInterrupt:
+        print("\n🛑 Monitoring stopped.")
