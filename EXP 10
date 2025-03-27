@@ -1,0 +1,73 @@
+import paramiko
+import socket
+import threading
+import time
+HOST = "0.0.0.0"  
+PORT = 2222       
+
+LOG_FILE = "ssh_brute_force.log"
+failed_attempts = {}
+
+class SSHServer(paramiko.ServerInterface):
+    def __init__(self):
+        self.event = threading.Event()
+
+    def check_auth_password(self, username, password):
+        """Logs failed login attempts and returns an authentication failure."""
+        client_ip = threading.current_thread().client_ip
+        log_attempt(client_ip, username, password)
+        return paramiko.AUTH_FAILED
+
+    def get_allowed_auths(self, username):
+        """Only allow password authentication."""
+        return "password"
+
+def log_attempt(ip, username, password):
+    """Logs failed login attempts."""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] Failed SSH login from {ip} | User: {username} | Password: {password}\n"
+
+    print(log_entry.strip())
+    with open(LOG_FILE, "a") as f:
+        f.write(log_entry)
+    failed_attempts[ip] = failed_attempts.get(ip, 0) + 1
+    if failed_attempts[ip] >= 5:
+        print(f"🚨 ALERT: Possible brute-force attack from {ip}!")
+
+def start_ssh_server():
+    """Starts a fake SSH server to detect brute-force attacks."""
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(5)
+
+    print(f"🛡️  SSH Honeypot running on {HOST}:{PORT}...")
+
+    while True:
+        client_socket, client_addr = server_socket.accept()
+        client_ip = client_addr[0]
+
+        transport = paramiko.Transport(client_socket)
+        try:
+            transport.load_server_moduli()
+            host_key = paramiko.RSAKey.generate(2048)
+            transport.add_server_key(host_key)
+
+            server = SSHServer()
+            threading.current_thread().client_ip = client_ip
+            transport.start_server(server=server)
+
+            channel = transport.accept(10) 
+            if channel is None:
+                continue
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            transport.close()
+            client_socket.close()
+
+if __name__ == "__main__":
+    try:
+        start_ssh_server()
+    except KeyboardInterrupt:
+        print("\n🛑 Stopping SSH Brute-Force Detection System.")
